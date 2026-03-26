@@ -28,7 +28,7 @@ langchain-huggingface
 sentence-transformers
 
 # ❌ REMOVE FAISS (or replace later)
-# faiss-cpu
+faiss-cpu==1.7.4
 
 # ── Vector Store ──
 pinecone-client
