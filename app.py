@@ -4,6 +4,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 from pyvis.network import Network
 import os, json, tempfile, time, html
+import streamlit as st
 
 st.set_page_config(
     page_title="AI Knowledge Graph Dashboard",
@@ -19,15 +20,16 @@ with open("styles.css") as f:
 from dotenv import load_dotenv
 load_dotenv()
 
-NEO4J_URI      = os.getenv("NEO4J_URI")
-NEO4J_USER     = os.getenv("NEO4J_USER")
-NEO4J_PASSWORD = os.getenv("NEO4J_PASSWORD")
+NEO4J_URI      = st.secrets["NEO4J_URI"]
+NEO4J_USER     = st.secrets["NEO4J_USER"]
+NEO4J_PASSWORD = st.secrets["NEO4J_PASSWORD"]
 
-GROQ_API_KEY   = os.getenv("GROQ_API_KEY")
 
-PINECONE_API_KEY = os.getenv("PINECONE_API_KEY")
-PINECONE_INDEX   = os.getenv("PINECONE_INDEX", "job-knowledge-graph")
-NGROK_TOKEN = os.getenv("NGROK_TOKEN")
+GROQ_API_KEY = st.secrets["GROQ_API_KEY"]
+
+PINECONE_API_KEY = st.secrets["PINECONE_API_KEY"]
+PINECONE_INDEX   = st.secrets["PINECONE_INDEX"]
+NGROK_TOKEN =      st.secrets["NGROK_TOKEN"]
 EMBEDDING_MODEL  = "all-MiniLM-L6-v2"
 LLM_MODEL        = "llama-3.3-70b-versatile"
 TOP_K_RESULTS    = 10

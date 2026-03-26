@@ -6,6 +6,7 @@ from langchain_core.runnables import RunnablePassthrough
 from langchain_groq import ChatGroq
 from langchain_community.vectorstores import FAISS
 from langchain_community.embeddings import HuggingFaceEmbeddings
+import streamlit as st
 
 RAG_PROMPT_TEMPLATE = """You are an intelligent job search assistant for an enterprise knowledge graph.
 Use these retrieved job listings to answer:
