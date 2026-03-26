@@ -29,7 +29,7 @@ sentence-transformers==2.7.0
 faiss-cpu==1.8.0
 
 # ── Vector Store (Cloud) ──
-pinecone-client==3.2.2
+pinecone-client==5.0.1
 
 # ── Utils ──
 python-dotenv==1.0.1
