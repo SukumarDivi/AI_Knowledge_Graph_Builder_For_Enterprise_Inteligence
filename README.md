@@ -18,16 +18,6 @@
 
 ---
 
-## 📸 Dashboard Preview
-
-![Dashboard Overview](./assests/image1.png)
-
-![Knowledge Graph View](./assests/image2.png)
-
-![RAG Semantic Search](./assests/image3.png)
-
----
-
 ## 📋 Table of Contents
 
 - [Project Overview](#-project-overview)
@@ -340,8 +330,7 @@ ai-knowledge-graph-builder/
 │       └── processed_data_with_skills.csv    # With skills column (644 × 27)
 │
 ├── assets/
-│   └── screenshots/
-│       └── dashboard.png                     # Dashboard preview screenshot
+│    └── dashboard.png                     # Dashboard preview screenshot
 │
 ├── outputs/
 │   ├── milestone2_entities.csv               # Extracted entities
@@ -367,7 +356,7 @@ ai-knowledge-graph-builder/
 |---|
 | Sukumar Divi, Vanam Anushree |
 
-**Mentor:** Infosys Springboard Program
+**Mentor:** Apeksha Rahangdale
 
 ---
 
@@ -385,6 +374,16 @@ ai-knowledge-graph-builder/
 ## 📄 License
 
 This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
+
+---
+
+## 📸 Dashboard Preview
+
+![Dashboard Overview](./assests/image1.png)
+
+![Knowledge Graph View](./assests/image2.png)
+
+![RAG Semantic Search](./assests/image3.png)
 
 ---
 
