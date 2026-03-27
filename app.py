@@ -25,7 +25,7 @@ with open("styles.css") as f:
 load_dotenv()
 
 NEO4J_URI = st.secrets["NEO4J_URI"]
-NEO4J_USERNAME = st.secrets["NEO4J_USERNAME"]
+NEO4J_USERNAME = st.secrets["NEO4J_USER"]
 NEO4J_PASSWORD = st.secrets["NEO4J_PASSWORD"]
 
 
