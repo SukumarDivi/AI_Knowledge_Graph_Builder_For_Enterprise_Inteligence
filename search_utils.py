@@ -105,7 +105,11 @@ def build_pinecone_pipeline(jobs, groq_api_key, pinecone_api_key, index_name, em
             | RAG_PROMPT | llm | StrOutputParser()
         )
         return rag_chain, retriever, index_time
+    # except Exception as e:
+    #     return None, None, 0
     except Exception as e:
+        import streamlit as st
+        st.error(f"🔴 Pinecone actual error: {str(e)}")
         return None, None, 0
 
 def run_search(rag_chain, retriever, query):
