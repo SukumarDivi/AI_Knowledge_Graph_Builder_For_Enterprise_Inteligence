@@ -25,7 +25,7 @@ with open("styles.css") as f:
 load_dotenv()
 
 NEO4J_URI = st.secrets["NEO4J_URI"]
-NEO4J_USER = st.secrets["NEO4J_USER"]
+NEO4J_USERNAME = st.secrets["NEO4J_USERNAME"]
 NEO4J_PASSWORD = st.secrets["NEO4J_PASSWORD"]
 
 
@@ -34,9 +34,49 @@ GROQ_API_KEY = st.secrets["GROQ_API_KEY"]
 PINECONE_API_KEY = st.secrets["PINECONE_API_KEY"]
 PINECONE_INDEX = st.secrets["PINECONE_INDEX"]
 NGROK_TOKEN = st.secrets["NGROK_TOKEN"]
+
+# ── Email (SendGrid) ──
+SENDGRID_API_KEY = st.secrets("SENDGRID_API_KEY", "")
+SENDER_EMAIL = st.secrets("SENDER_EMAIL", "")
+
 EMBEDDING_MODEL = "all-MiniLM-L6-v2"
 LLM_MODEL = "llama-3.3-70b-versatile"
 TOP_K_RESULTS = 10
+
+# ── Email helper ──
+
+
+def render_email_share_ui(key_prefix, subject, text_body, png_bytes=None, png_filename="report.png"):
+    """Reusable 'Share as Report' expander — drop it anywhere after a result."""
+    with st.expander("📧 Share as Email Report", expanded=False):
+        recipient = st.text_input(
+            "Recipient email address",
+            placeholder="colleague@company.com",
+            key=f"{key_prefix}_recipient"
+        )
+        if st.button("Send Report", key=f"{key_prefix}_send_btn"):
+            if not recipient or "@" not in recipient:
+                st.warning("Please enter a valid email address.")
+            elif not SENDGRID_API_KEY:
+                st.error(
+                    "SENDGRID_API_KEY not set in st.secrets. See setup guide below.")
+            else:
+                with st.spinner("Sending report..."):
+                    from search_utils import send_email_report
+                    ok, msg = send_email_report(
+                        sendgrid_api_key=SENDGRID_API_KEY,
+                        sender_email=SENDER_EMAIL,
+                        recipient_email=recipient,
+                        subject=subject,
+                        text_body=text_body,
+                        png_bytes=png_bytes,
+                        png_filename=png_filename,
+                    )
+                if ok:
+                    st.success(msg)
+                else:
+                    st.error(msg)
+
 
 # ── Load Data ──
 
@@ -44,9 +84,9 @@ TOP_K_RESULTS = 10
 @st.cache_resource(show_spinner="Connecting to Neo4j...")
 def load_data():
     from graph_utils import load_jobs_from_neo4j, load_graph_data, load_stats
-    jobs = load_jobs_from_neo4j(NEO4J_URI, NEO4J_USER, NEO4J_PASSWORD)
-    nodes, edges = load_graph_data(NEO4J_URI, NEO4J_USER, NEO4J_PASSWORD)
-    stats = load_stats(NEO4J_URI, NEO4J_USER, NEO4J_PASSWORD)
+    jobs = load_jobs_from_neo4j(NEO4J_URI, NEO4J_USERNAME, NEO4J_PASSWORD)
+    nodes, edges = load_graph_data(NEO4J_URI, NEO4J_USERNAME, NEO4J_PASSWORD)
+    stats = load_stats(NEO4J_URI, NEO4J_USERNAME, NEO4J_PASSWORD)
     return jobs, nodes, edges, stats
 
 
@@ -87,7 +127,7 @@ total_edges = sum(stats["edges"].values())
 
 # ── Sidebar ──
 with st.sidebar:
-    st.markdown("<div style='text-align:center;padding:16px 0;'><div style='font-size:1.8rem;font-weight:700;background:linear-gradient(135deg,#6366f1,#8b5cf6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;'>AI KG Dashboard</div></div>", unsafe_allow_html=True)
+    st.markdown("<div style='text-align:center;padding:16px 0;'><div style='font-size:1.8rem;font-weight:700;background:linear-gradient(135deg,#6366f1,#8b5cf6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;'>Knowledge Graph</div><div style='color:#64748b;font-size:0.75rem;'>Enterprise Intelligence | Milestone 4</div></div>", unsafe_allow_html=True)
     st.divider()
 
     st.markdown("### Filters")
@@ -144,7 +184,7 @@ if pri_filter:
     fdf = fdf[fdf["Priority"].isin(pri_filter)]
 
 # ── Header ──
-st.markdown("<div class='gradient-title'>AI Knowledge Graph Dashboard</div><br>", unsafe_allow_html=True)
+st.markdown("<div class='gradient-title'>AI Knowledge Graph Dashboard</div><div style='text-align:center;color:#64748b;margin-bottom:24px;'>Milestone 4 | Interactive Graph Exploration | FAISS vs Pinecone | RAG Search | Node AI Agent</div>", unsafe_allow_html=True)
 
 # ── Top Metrics ──
 c1, c2, c3, c4, c5 = st.columns(5)
@@ -362,7 +402,7 @@ attachClickHandler();
             with st.spinner(f"🤖 AI Agent analyzing **{node_label_sel}**: {node_name_sel}..."):
                 from graph_utils import get_node_details_from_neo4j
                 from search_utils import explain_node_with_agent
-                nd = get_node_details_from_neo4j(NEO4J_URI, NEO4J_USER, NEO4J_PASSWORD,
+                nd = get_node_details_from_neo4j(NEO4J_URI, NEO4J_USERNAME, NEO4J_PASSWORD,
                                                  node_name_sel, node_label_sel)
                 exp, lat = explain_node_with_agent(node_name_sel, node_label_sel, nd,
                                                    GROQ_API_KEY, LLM_MODEL)
@@ -412,6 +452,62 @@ attachClickHandler();
                 with st.expander("View Node Relationships"):
                     for rel in nd_cache["relationships"]:
                         st.markdown(f"- `{rel}`")
+
+            # ── Scenario 1: Share node report ──
+            st.markdown("<br>", unsafe_allow_html=True)
+            _props_text = "\n".join(
+                f"  {k}: {v}" for k, v in nd_cache.get("properties", {}).items()
+            )
+            _rels_text = "\n".join(
+                f"  {r}" for r in nd_cache.get("relationships", [])
+            )
+            _node_email_body = f"""
+AI Knowledge Graph — Node Report
+==================================
+Node Type : {st.session_state.get('_node_lbl', '')}
+Node Name : {st.session_state.get('_node_nm', '')}
+
+AI EXPLANATION
+--------------
+{st.session_state.get('_node_exp', '')}
+
+NODE PROPERTIES
+---------------
+{_props_text if _props_text else 'N/A'}
+
+RELATIONSHIPS
+-------------
+{_rels_text if _rels_text else 'N/A'}
+
+Generated by AI Knowledge Graph Dashboard | Milestone 4
+"""
+            # Build subgraph PNG
+            _node_png = None
+            try:
+                from graph_utils import build_node_subgraph_data, generate_subgraph_image
+                _sg_nodes, _sg_edges = build_node_subgraph_data(
+                    NEO4J_URI, NEO4J_USERNAME, NEO4J_PASSWORD,
+                    st.session_state.get("_node_nm", ""),
+                    st.session_state.get("_node_lbl", "")
+                )
+                if _sg_nodes:
+                    _node_png = generate_subgraph_image(
+                        _sg_nodes, _sg_edges,
+                        title=f"Subgraph: {st.session_state.get('_node_lbl', '')} → {st.session_state.get('_node_nm', '')}"
+                    )
+                    if _node_png:
+                        with st.expander("🔗 Preview Subgraph (will be attached to email)"):
+                            st.image(_node_png, use_container_width=True)
+            except Exception as _e:
+                pass  # graph image is optional, don't break the page
+
+            render_email_share_ui(
+                key_prefix="node_share",
+                subject=f"Node Report: {st.session_state.get('_node_lbl', '')} — {st.session_state.get('_node_nm', '')}",
+                text_body=_node_email_body,
+                png_bytes=_node_png,
+                png_filename=f"subgraph_{st.session_state.get('_node_nm', 'node').replace(' ', '_')}.png",
+            )
     else:
         st.info(
             "👆 Click any node in the graph above — the AI Agent will explain it instantly!")
@@ -495,9 +591,9 @@ with tab3:
                 tuple(j.job_id for j in jobs))
         if pine_chain:
             active_chain, active_retriever = pine_chain, pine_retriever
-            st.success("✅ Pinecone connected successfully!")
         else:
-            # st.warning("⚠️ Pinecone unavailable — falling back to FAISS.")
+            st.error(
+                "Pinecone connection failed. Check PINECONE_API_KEY in configuration.")
             active_chain, active_retriever = faiss_chain, faiss_retriever
 
     st.markdown("**Try these queries:**")
@@ -552,6 +648,71 @@ with tab3:
                 <div style='color:#64748b;font-size:0.8rem;margin-top:8px;'>Demand: {job.get('demand_score', 0):.1f}/100 | Region: {job.get('region', 'N/A')}</div>
             </div>
             """, unsafe_allow_html=True)
+
+        # ── Scenario 2: Build and persist report data in session_state ──
+        _jobs_table_text = "\n".join([
+            f"  {i+1}. {r.get('category', 'N/A')} | {r.get('workplace', 'N/A')} | "
+            f"{r.get('city', 'N/A')}, {r.get('country', 'N/A')} | "
+            f"Demand: {r.get('demand_score', 0):.1f}/100 | {r.get('priority_class', 'N/A')}"
+            for i, r in enumerate(results)
+        ])
+        _search_email_body = f"""
+AI Knowledge Graph — Semantic Search Report
+=============================================
+Query      : {query}
+Vector Store: {'FAISS' if is_faiss else 'Pinecone'}
+Latency    : {latency}ms
+Results    : {len(results)} jobs found
+
+AI ANSWER
+---------
+{answer}
+
+TOP MATCHING JOBS
+-----------------
+{_jobs_table_text}
+
+Generated by AI Knowledge Graph Dashboard | Milestone 4
+"""
+        # Build search subgraph PNG
+        _search_png = None
+        try:
+            from graph_utils import build_search_subgraph_data, generate_subgraph_image
+            _sg_nodes, _sg_edges = build_search_subgraph_data(
+                NEO4J_URI, NEO4J_USERNAME, NEO4J_PASSWORD, results
+            )
+            if _sg_nodes:
+                _search_png = generate_subgraph_image(
+                    _sg_nodes, _sg_edges,
+                    title=f"Search Subgraph: {query[:60]}"
+                )
+        except Exception as _e:
+            pass  # graph image optional
+
+        # Persist everything needed for the email UI across reruns
+        st.session_state["search_report"] = {
+            "query": query,
+            "email_body": _search_email_body,
+            "png_bytes": _search_png,
+            "png_filename": f"search_subgraph_{query[:30].replace(' ', '_')}.png",
+            "subject": f"Job Search Report: {query[:60]}",
+        }
+
+    # ── Scenario 2: Share search report — rendered OUTSIDE the search button
+    #    block so it survives Streamlit reruns triggered by the email widgets ──
+    if "search_report" in st.session_state:
+        _rpt = st.session_state["search_report"]
+        st.markdown("<br>", unsafe_allow_html=True)
+        if _rpt.get("png_bytes"):
+            with st.expander("🔗 Preview Result Subgraph (will be attached to email)"):
+                st.image(_rpt["png_bytes"], use_container_width=True)
+        render_email_share_ui(
+            key_prefix="search_share",
+            subject=_rpt["subject"],
+            text_body=_rpt["email_body"],
+            png_bytes=_rpt.get("png_bytes"),
+            png_filename=_rpt["png_filename"],
+        )
 
 # ════════════════════════════════
 # TAB 4: FAISS vs PINECONE
@@ -774,3 +935,5 @@ with tab6:
                     color_continuous_scale=["#0f172a", "#6366f1", "#a78bfa"], aspect="auto")
     fig.update_layout(paper_bgcolor="rgba(0,0,0,0)", font_color="#e2e8f0")
     st.plotly_chart(fig, use_container_width=True)
+
+st.markdown("<div style='text-align:center;padding:20px;color:#475569;border-top:1px solid rgba(99,102,241,0.2);margin-top:40px;'>AI Knowledge Graph Builder | Milestone 4 | LangChain + FAISS + Pinecone + Groq + Neo4j + Streamlit + Node AI Agent</div>", unsafe_allow_html=True)

@@ -14,12 +14,14 @@ Use these retrieved job listings to answer:
 Question: {question}
 Give a helpful 2-3 sentence answer mentioning how many jobs found, key locations and patterns:"""
 
+
 def get_embeddings(model_name):
     return HuggingFaceEmbeddings(
         model_name=model_name,
         model_kwargs={"device": "cpu"},
         encode_kwargs={"normalize_embeddings": True}
     )
+
 
 def jobs_to_documents(jobs):
     documents = []
@@ -37,21 +39,25 @@ def jobs_to_documents(jobs):
         documents.append(doc)
     return documents
 
+
 def build_faiss_pipeline(jobs, groq_api_key, embedding_model, llm_model, top_k):
     """Build FAISS RAG pipeline"""
     documents = jobs_to_documents(jobs)
     embeddings_model = get_embeddings(embedding_model)
 
     start = time.time()
-    vectorstore = FAISS.from_documents(documents=documents, embedding=embeddings_model)
+    vectorstore = FAISS.from_documents(
+        documents=documents, embedding=embeddings_model)
     index_time = round((time.time() - start) * 1000, 1)
 
     retriever = vectorstore.as_retriever(
         search_type="mmr",
         search_kwargs={"k": top_k, "fetch_k": 30}
     )
-    llm = ChatGroq(groq_api_key=groq_api_key,model_name=llm_model, temperature=0.2, max_tokens=512)
-    RAG_PROMPT = PromptTemplate(input_variables=["context", "question"], template=RAG_PROMPT_TEMPLATE)
+    llm = ChatGroq(groq_api_key=groq_api_key,
+                   model_name=llm_model, temperature=0.2, max_tokens=512)
+    RAG_PROMPT = PromptTemplate(
+        input_variables=["context", "question"], template=RAG_PROMPT_TEMPLATE)
 
     def format_docs(docs):
         return "\n\n".join(doc.page_content for doc in docs)
@@ -62,12 +68,14 @@ def build_faiss_pipeline(jobs, groq_api_key, embedding_model, llm_model, top_k):
     )
     return rag_chain, retriever, index_time
 
+
 def build_pinecone_pipeline(jobs, groq_api_key, pinecone_api_key, index_name, embedding_model, llm_model, top_k):
     """Build Pinecone RAG pipeline"""
     try:
         from pinecone import Pinecone, ServerlessSpec
         from langchain_pinecone import PineconeVectorStore
-        import os, time
+        import os
+        import time
 
         documents = jobs_to_documents(jobs)
         embeddings_model = get_embeddings(embedding_model)
@@ -94,8 +102,10 @@ def build_pinecone_pipeline(jobs, groq_api_key, pinecone_api_key, index_name, em
         index_time = round((time.time() - start) * 1000, 1)
 
         retriever = vectorstore.as_retriever(search_kwargs={"k": top_k})
-        llm = ChatGroq(groq_api_key=groq_api_key,model_name=llm_model, temperature=0.2, max_tokens=512)
-        RAG_PROMPT = PromptTemplate(input_variables=["context", "question"], template=RAG_PROMPT_TEMPLATE)
+        llm = ChatGroq(groq_api_key=groq_api_key,
+                       model_name=llm_model, temperature=0.2, max_tokens=512)
+        RAG_PROMPT = PromptTemplate(
+            input_variables=["context", "question"], template=RAG_PROMPT_TEMPLATE)
 
         def format_docs(docs):
             return "\n\n".join(doc.page_content for doc in docs)
@@ -105,12 +115,9 @@ def build_pinecone_pipeline(jobs, groq_api_key, pinecone_api_key, index_name, em
             | RAG_PROMPT | llm | StrOutputParser()
         )
         return rag_chain, retriever, index_time
-    # except Exception as e:
-    #     return None, None, 0
     except Exception as e:
-        import streamlit as st
-        st.error(f"🔴 Pinecone actual error: {str(e)}")
         return None, None, 0
+
 
 def run_search(rag_chain, retriever, query):
     """Run search and return answer, results, latency"""
@@ -138,11 +145,13 @@ Give a clear, insightful 3-4 sentence explanation of:
 
 Be specific, professional. Do NOT use HTML tags in your response."""
 
+
 def explain_node_with_agent(node_name, node_label, node_details, groq_api_key, llm_model):
     """AI Agent that explains a clicked graph node using Groq LLM"""
     try:
         import time as _time
-        llm = ChatGroq(groq_api_key=groq_api_key,model_name=llm_model, temperature=0.3, max_tokens=400)
+        llm = ChatGroq(groq_api_key=groq_api_key,
+                       model_name=llm_model, temperature=0.3, max_tokens=400)
         prompt = NODE_AGENT_PROMPT.format(
             label=node_label,
             name=node_name,
@@ -156,6 +165,57 @@ def explain_node_with_agent(node_name, node_label, node_details, groq_api_key, l
     except Exception as e:
         return f"Agent error: {str(e)}", 0
 
+
+def send_email_report(
+    sendgrid_api_key,
+    sender_email,
+    recipient_email,
+    subject,
+    text_body,
+    png_bytes=None,
+    png_filename="subgraph.png",
+):
+    """
+    Send an email report via SendGrid.
+    Attaches the subgraph PNG if png_bytes is provided.
+    Returns (success: bool, message: str)
+    """
+    try:
+        import base64
+        from sendgrid import SendGridAPIClient
+        from sendgrid.helpers.mail import (
+            Mail, Attachment, FileContent, FileName,
+            FileType, Disposition
+        )
+
+        message = Mail(
+            from_email=sender_email,
+            to_emails=recipient_email,
+            subject=subject,
+            html_content=text_body.replace("\n", "<br>")
+        )
+
+        if png_bytes:
+            encoded = base64.b64encode(png_bytes).decode()
+            attachment = Attachment(
+                FileContent(encoded),
+                FileName(png_filename),
+                FileType("image/png"),
+                Disposition("attachment")
+            )
+            message.attachment = attachment
+
+        sg = SendGridAPIClient(sendgrid_api_key)
+        response = sg.send(message)
+        if response.status_code in (200, 202):
+            return True, f"Report sent to {recipient_email} ✅"
+        else:
+            return False, f"SendGrid error: HTTP {response.status_code}"
+    except Exception as e:
+        return False, f"Email error: {str(e)}"
+
+
 print("search_utils.py written!")
 print("  FAISS pipeline: local, MMR retriever, ~36ms")
 print("  Pinecone pipeline: cloud, similarity search, ~674ms")
+print("  send_email_report: SendGrid with PNG attachment")
