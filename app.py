@@ -592,8 +592,8 @@ with tab3:
         if pine_chain:
             active_chain, active_retriever = pine_chain, pine_retriever
         else:
-            st.error(
-                "Pinecone connection failed. Check PINECONE_API_KEY in configuration.")
+            # st.error(
+            #     "Pinecone connection failed. Check PINECONE_API_KEY in configuration.")
             active_chain, active_retriever = faiss_chain, faiss_retriever
 
     st.markdown("**Try these queries:**")
