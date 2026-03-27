@@ -87,7 +87,7 @@ total_edges = sum(stats["edges"].values())
 
 # ── Sidebar ──
 with st.sidebar:
-    st.markdown("<div style='text-align:center;padding:16px 0;'><div style='font-size:1.8rem;font-weight:700;background:linear-gradient(135deg,#6366f1,#8b5cf6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;'>Knowledge Graph</div></div>", unsafe_allow_html=True)
+    st.markdown("<div style='text-align:center;padding:16px 0;'><div style='font-size:1.8rem;font-weight:700;background:linear-gradient(135deg,#6366f1,#8b5cf6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;'>AI KG Dashboard</div></div>", unsafe_allow_html=True)
     st.divider()
 
     st.markdown("### Filters")
@@ -144,7 +144,7 @@ if pri_filter:
     fdf = fdf[fdf["Priority"].isin(pri_filter)]
 
 # ── Header ──
-st.markdown("<div class='gradient-title'>AI Knowledge Graph Dashboard</div>", unsafe_allow_html=True)
+st.markdown("<div class='gradient-title'>AI Knowledge Graph Dashboard</div><br>", unsafe_allow_html=True)
 
 # ── Top Metrics ──
 c1, c2, c3, c4, c5 = st.columns(5)
