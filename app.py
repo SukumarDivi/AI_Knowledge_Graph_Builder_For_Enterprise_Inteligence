@@ -36,8 +36,8 @@ PINECONE_INDEX = st.secrets["PINECONE_INDEX"]
 NGROK_TOKEN = st.secrets["NGROK_TOKEN"]
 
 # ── Email (SendGrid) ──
-SENDGRID_API_KEY = st.secrets["SENDGRID_API_KEY"]
-SENDER_EMAIL = st.secrets["SENDER_EMAIL"]
+SENDGRID_API_KEY = st.secrets.get["SENDGRID_API_KEY"]
+SENDER_EMAIL = st.secrets.get["SENDER_EMAIL"]
 
 EMBEDDING_MODEL = "all-MiniLM-L6-v2"
 LLM_MODEL = "llama-3.3-70b-versatile"
