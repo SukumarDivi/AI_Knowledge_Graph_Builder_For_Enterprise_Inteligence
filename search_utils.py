@@ -124,8 +124,33 @@ def build_pinecone_pipeline(jobs, groq_api_key, pinecone_api_key, index_name, em
         return None, None, 0
 
 
+def _extract_query_keywords(query):
+    """Pull meaningful filter words from the query (locations, workplace, job type etc.)"""
+    import re
+    # Common stop words to ignore
+    stop = {
+        "show", "me", "find", "get", "list", "give", "search", "jobs", "job",
+        "listings", "listing", "positions", "position", "roles", "role",
+        "in", "at", "for", "the", "a", "an", "and", "or", "with", "that",
+        "are", "is", "of", "to", "from", "on", "by", "all", "any", "some",
+        "data", "scientist", "developer", "engineer", "analyst", "manager",
+        "remote", "hybrid", "onsite", "on-site", "full-time", "part-time",
+        "senior", "junior", "lead", "high", "demand", "premium", "top",
+    }
+    words = re.findall(r'[a-zA-Z]+', query.lower())
+    return [w for w in words if w not in stop and len(w) > 2]
+
+
+def _job_matches_query(job_meta, keywords):
+    """Return True if the job metadata contains at least one query keyword."""
+    if not keywords:
+        return True
+    searchable = " ".join(str(v).lower() for v in job_meta.values())
+    return any(kw in searchable for kw in keywords)
+
+
 def run_search(rag_chain, retriever, query):
-    """Run search and return answer, results trimmed to AI-stated count, latency"""
+    """Run search, filter results to query keywords, trim to AI-stated count."""
     import re
 
     start = time.time()
@@ -135,23 +160,29 @@ def run_search(rag_chain, retriever, query):
     retrieved = retriever.invoke(query)
     all_results = [doc.metadata for doc in retrieved]
 
-    # Parse the count the LLM explicitly stated e.g. "I found 4 remote Data Scientist job listings"
-    # Strategy: grab the first number that appears after found/identified/retrieved
+    # ── Step 1: filter by query keywords (location, workplace, etc.) ──
+    keywords = _extract_query_keywords(query)
+    filtered = [r for r in all_results if _job_matches_query(r, keywords)]
+    # If filtering removes everything, fall back to unfiltered
+    if not filtered:
+        filtered = all_results
+
+    # ── Step 2: parse the count the LLM stated e.g. "I found 4 remote … jobs" ──
     match = re.search(
         r'(?:found|identified|retrieved|there\s+are|showing)\s+(?:\w+\s+){0,5}?(\d+)\b',
         answer, re.IGNORECASE
     )
-    # Fallback: simpler grab — first number right after the trigger word
     if not match:
         match = re.search(
             r'(?:found|identified|retrieved|there\s+are|showing)\s+(\d+)',
             answer, re.IGNORECASE
         )
+
     if match:
         ai_count = int(match.group(1))
-        display_results = all_results[:max(1, min(ai_count, len(all_results)))]
+        display_results = filtered[:max(1, min(ai_count, len(filtered)))]
     else:
-        display_results = all_results
+        display_results = filtered
 
     return answer, display_results, latency
 
