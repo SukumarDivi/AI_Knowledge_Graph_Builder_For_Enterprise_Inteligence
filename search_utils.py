@@ -135,13 +135,18 @@ def run_search(rag_chain, retriever, query):
     retrieved = retriever.invoke(query)
     all_results = [doc.metadata for doc in retrieved]
 
-    # Parse the count the LLM explicitly stated e.g. "I found 3 jobs"
+    # Parse the count the LLM explicitly stated e.g. "I found 4 remote Data Scientist job listings"
+    # Strategy: grab the first number that appears after found/identified/retrieved
     match = re.search(
-        r'(?:found|identified|retrieved|there\s+are|showing)\s+(\d+)\s+'
-        r'(?:matching\s+|relevant\s+|premium\s+|high[- ]priority\s+)?'
-        r'(?:job|listing|result|position|role)',
+        r'(?:found|identified|retrieved|there\s+are|showing)\s+(?:\w+\s+){0,5}?(\d+)\b',
         answer, re.IGNORECASE
     )
+    # Fallback: simpler grab — first number right after the trigger word
+    if not match:
+        match = re.search(
+            r'(?:found|identified|retrieved|there\s+are|showing)\s+(\d+)',
+            answer, re.IGNORECASE
+        )
     if match:
         ai_count = int(match.group(1))
         display_results = all_results[:max(1, min(ai_count, len(all_results)))]
