@@ -7,11 +7,9 @@ langchain==0.3.25
 langchain-core==0.3.58
 langchain-groq==0.3.2
 langchain-community==0.3.23
-langchain-pinecone==0.0.1
-faiss-cpu==1.9.0
+faiss-cpu==1.13.0
 sentence-transformers==3.4.1
 neo4j==5.28.1
-pinecone-client==5.0.1
 sendgrid==6.11.0
 networkx==3.4.2
 matplotlib==3.10.1
