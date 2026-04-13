@@ -1,15 +1,13 @@
-from dotenv import load_dotenv
+import os
 import streamlit as st
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 from pyvis.network import Network
-import os
 import json
 import tempfile
 import time
 import html
-import streamlit as st
 
 st.set_page_config(
     page_title="AI Knowledge Graph Dashboard",
@@ -21,23 +19,22 @@ st.set_page_config(
 with open("styles.css") as f:
     st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
+# ── Secrets: works on Streamlit Cloud (st.secrets) AND Render (os.environ) ──
+def get_secret(key: str, default: str = "") -> str:
+    try:
+        return st.secrets[key]
+    except Exception:
+        return os.environ.get(key, default)
 
-load_dotenv()
-
-NEO4J_URI = st.secrets["NEO4J_URI"]
-NEO4J_USERNAME = st.secrets["NEO4J_USER"]
-NEO4J_PASSWORD = st.secrets["NEO4J_PASSWORD"]
-
-
-GROQ_API_KEY = st.secrets["GROQ_API_KEY"]
-
-PINECONE_API_KEY = st.secrets["PINECONE_API_KEY"]
-PINECONE_INDEX = st.secrets["PINECONE_INDEX"]
-NGROK_TOKEN = st.secrets["NGROK_TOKEN"]
-
-# ── Email (SendGrid) ──
-SENDGRID_API_KEY = st.secrets["SENDGRID_API_KEY"]
-SENDER_EMAIL = st.secrets["SENDER_EMAIL"]
+NEO4J_URI        = get_secret("NEO4J_URI")
+NEO4J_USERNAME   = get_secret("NEO4J_USER")
+NEO4J_PASSWORD   = get_secret("NEO4J_PASSWORD")
+GROQ_API_KEY     = get_secret("GROQ_API_KEY")
+PINECONE_API_KEY = get_secret("PINECONE_API_KEY")
+PINECONE_INDEX   = get_secret("PINECONE_INDEX")
+NGROK_TOKEN      = get_secret("NGROK_TOKEN")
+SENDGRID_API_KEY = get_secret("SENDGRID_API_KEY")
+SENDER_EMAIL     = get_secret("SENDER_EMAIL")
 
 EMBEDDING_MODEL = "all-MiniLM-L6-v2"
 LLM_MODEL = "llama-3.3-70b-versatile"

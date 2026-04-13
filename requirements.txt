@@ -1,38 +1,17 @@
-# ── Dashboard ──
-streamlit==1.32.0
-pyvis==0.3.2
-plotly==5.19.0
-
-# ── Data ──
+streamlit
 pandas
-numpy
+plotly
+pyvis
+langchain
+langchain-core
+langchain-groq
+langchain-community
+langchain-pinecone
+faiss-cpu
+sentence-transformers
+neo4j
+pinecone-client
+sendgrid
 networkx
 matplotlib
-seaborn
-sendgrid
-
-# ── Database ──
-neo4j
-
-# ── Groq LLM ──
-groq
-httpx
-
-# ── LangChain stack ──
-langchain==0.3.7
-langchain-community==0.3.7
-langchain-groq
-langchain-pinecone
-langchain-huggingface
-
-# ── Embeddings ──
-sentence-transformers
-
-# ❌ REMOVE FAISS (or replace later)
-faiss-cpu==1.7.4
-
-# ── Vector Store ──
-pinecone-client
-
-# ── Utils ──
 python-dotenv
