@@ -1,1 +1,13 @@
+# Heavy files not needed for deployment
+Outputs/
+assests/
+notebooks/
+data/
+Sukumar_Divi_Agile_Sheet.xlsx
+Sukumar_Agile_Sheet.xlsx
+*.zip
+
+# Python
+__pycache__/
+*.pyc
 .env
