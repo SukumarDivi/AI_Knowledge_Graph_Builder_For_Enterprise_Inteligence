@@ -1,4 +1,0 @@
-MILESTONE 2 - GRAPH METRICS
-Nodes: 1173
-Edges: 1932
-Density: 0.0014
