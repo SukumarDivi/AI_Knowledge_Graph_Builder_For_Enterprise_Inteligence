@@ -2,7 +2,7 @@ name: Keep Streamlit Alive
 
 on:
   schedule:
-    - cron: '*/30 * * * *'  # every 30 minutes
+    - cron: '*/30 * * * *'
   workflow_dispatch:
 
 jobs:
@@ -11,6 +11,13 @@ jobs:
     steps:
       - name: Ping Streamlit App
         run: |
-          curl -L --max-time 60 \
-          https://aiknowledgegraphbuilderforenterpriseinteligence.streamlit.app/
-          echo "Pinged successfully"
+          curl -L \
+            --max-time 120 \
+            --retry 3 \
+            --retry-delay 10 \
+            --retry-max-time 180 \
+            -o /dev/null \
+            -w "HTTP Status: %{http_code}\n" \
+            https://aiknowledgegraphbuilderforenterpriseinteligence.streamlit.app/ \
+            || true
+          echo "Ping completed"
